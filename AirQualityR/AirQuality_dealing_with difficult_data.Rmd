@@ -1,0 +1,300 @@
+---
+title: "Handling difficult data with R 1: Air Quality data"
+output: html_notebook
+---
+
+## Introduction
+
+This is a notebook exploring a difficult data set that was given to me in a job exam - that I failed. I attempted the exam in python and well it didn't go well. This is the first of a series of notebooks that explores data processing and wrangling in R. [There is a complementary notebook for this project as well](../AirQuality_dealing_with difficult_data.ipynb)
+
+## 1. Data Loading and tidying
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r,eval=False}
+df <- read.csv("../AirQualityUCI.csv")
+```
+Already we have an issue loading the data
+
+```{r}
+df <- read.csv("../AirQualityUCI.csv",sep=';')
+head(df)
+```
+The issue was the same as in Python and pandas, I needed to specify the separator, which is a semi-colon as opposed to a comma. As with python, we see there are 2 additional columns X and X.1
+
+```{r}
+colnames(df)
+```
+
+Remove X and X.1
+
+```{r}
+df$X.1 <- NULL
+df$X <- NULL
+
+colnames(df)
+```
+
+
+Missing/null values
+
+
+```{r}
+df %>% is.na() %>% colSums()
+```
+
+
+```{r}
+dim(df)
+```
+
+```{r}
+df[is.na(df),]
+```
+
+912 rows? It was only 114 rows! WTF? Maybe `complete_cases` will work?
+
+
+```{r}
+df[!complete.cases(df),]
+```
+
+Seems more sensible. Remove these data 
+
+```{r}
+df <- df[complete.cases(df),]
+dim(df)
+```
+
+Good, now some basic info
+
+```{r}
+str(df)
+```
+
+```{r}
+summary(df)
+```
+
+There are a number of issues with this data set that needs to be fixed:
+  1. 5 columns are factors when they should be floats: CO.GT., C6H6.GT., T, RH, AH  
+  2. minimum values of -200 should be replaced with Na and imputed
+  
+First let's deal with the 5 columns
+
+
+```{r}
+df %>% select(CO.GT.) %>% head()
+```
+
+As with the Python problem we need to replace the comma with a period and convert to float
+
+```{r}
+df[1:10,"CO.GT."] %>% str_replace(.,",",".") %>% as.numeric()
+```
+
+Good now to do for all
+
+```{r}
+cols_ <- c("CO.GT.", "C6H6.GT.", "T", "RH", "AH" )
+for (col in cols_) {
+  #df[,col] <- df %>% select(col) %>% str_replace(.,",",".") %>% as.numeric()
+  df[,col] <- df[,col] %>% as.character() %>% str_replace(.,",",".")  %>% as.numeric()
+}
+
+str(df)
+```
+
+
+The next stage is to replace the -200 values with NA. let's take a sample data. Will use the `na_if` function from `dplyr`/`tidyverse`
+
+```{r}
+temp <- df[1:20,"CO.GT."]
+temp[18] <- -200
+temp
+```
+
+```{r}
+(temp_na <- na_if(temp, -200))
+```
+
+Good now to do for all columns
+
+
+
+```{r}
+for (col in colnames(df)) {
+  #df[,col] <- df %>% select(col) %>% str_replace(.,",",".") %>% as.numeric()
+  df[,col] <- na_if(df[,col], -200)
+}
+
+df %>% is.na() %>% colSums()
+```
+
+
+
+```{r}
+df %>% is.na() %>% colMeans()
+```
+
+Good the same results as with Python
+
+```{r}
+summary(df)
+```
+
+
+Good the data seems to be in a format that is most reasonable. The next step is some basic data exploration that will require some manipulation of the data.
+
+### 2. Data Exploration 
+
+NMHC(GT) is missing 90% of data! That is significant, and most probable will have to be dropped. Before moving to the next stage (imputing and model training), let's answer some questions regarding the data:
+
+1. What is the highest CO content in June 2004? How does this compare with December 2004?
+2. The most common time and weekday of the top 10 highest NO2, CO and T. 
+3. The month with the highest average CO? 
+4. The 5 features most correlate with temperature and absolute humidity? Are they the same? 
+
+ 
+#### 1.  What is the highest CO content in June 2004? How does this compare with December 2004?
+
+before continuing we need to convert the Date and Time columns to a datetime format
+
+
+```{r}
+df %>% select(Date,Time) %>%head()
+```
+
+use the `anytime` package
+
+```{r}
+anytime::anytime(df$Date[1])
+```
+
+Ok this is a bit annoying. The timeformat is wrong. Looking online I need to look at the formats
+
+```{r}
+anytime::getFormats()
+```
+
+```{r}
+"%d/%m/%Y" %in% anytime::getFormats()
+```
+
+This format does not exist, so we should add it as well as a few more
+
+
+```{r}
+anytime::addFormats(c("%d/%m/%Y","%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H.%M.%S"))
+anytime::anytime(df$Date[1])
+```
+
+huzza! Let's try with the Time format
+
+```{r}
+anytime::anytime(paste0(df$Date[1], ' ' ,df$Time[1]))
+```
+
+
+Great! ow we can add another column
+
+```{r}
+df$Timestamp <- anytime::anytime(paste0(df$Date, ' ' ,df$Time))
+df %>% select(Date, Time, Timestamp)
+```
+Noice! Now we can proceed with the question
+
+max in June
+
+```{r}
+# add a month column
+
+df$month <- lubridate::month(df$Timestamp)
+
+df %>% filter(month == 6) %>% select(CO.GT.) %>% summarise(max(CO.GT.,na.rm = TRUE))
+
+```
+
+ Max in December
+```{r}
+df %>% filter(month == 12) %>% select(CO.GT.) %>% summarise(max(CO.GT.,na.rm = TRUE))
+```
+
+Bonus: max per month
+
+```{r}
+df %>% group_by(month) %>% select(CO.GT.) %>% summarise(max(CO.GT.,na.rm = TRUE))
+```
+
+The highest month is November
+
+
+
+#### 2. The most common time and weekday of the top 10 highest NO2, CO and T. 
+
+
+Add a new colun with Weekday
+
+
+```{r}
+
+df$weekday <- weekdays(df$Timestamp)
+```
+
+
+```{r}
+df %>% select(Time,weekday, NO2.GT.) %>% arrange(desc(NO2.GT.)) %>% head(10)
+```
+
+The most common time is 09:00:00 and on Friday
+
+```{r}
+df %>% select(Time,weekday, CO.GT.) %>% arrange(desc(CO.GT.)) %>% head(10)
+```
+ The most common time is 18:00:00 and day Tuesday
+
+
+
+```{r}
+df %>% select(Timestamp,weekday, T) %>% arrange(desc(T)) %>% head(10)
+```
+
+The most common time is 16:00:00 and day is Thursday
+
+#### 3. The month with the highest average CO?
+
+```{r}
+df %>% 
+  select(month, CO.GT.) %>%
+  group_by(month) %>% 
+  summarise(
+    mean_CO = mean(CO.GT.,na.rm=TRUE)
+    ) %>% 
+  arrange(desc(mean_CO))
+```
+
+
+The month with the highest average CO is December
+
+
+
+#### 4. The 5 features most correlate with temperature and absolute humidity? Are they the same? 
+
+
+```{r}
+
+cor(df[,colnames(df)[3:15]], use="complete.obs")[,"T"]
+```
+
+```{r}
+cor(df[,colnames(df)[3:15]], use="complete.obs")[,"AH"]
+```
+
+
+### 3. Building a predictive model
+
+
+

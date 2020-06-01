@@ -1,0 +1,1 @@
+"0","df %>% select(Timestamp,weekday, T) %>% arrange(desc(T)) %>% head(10)"

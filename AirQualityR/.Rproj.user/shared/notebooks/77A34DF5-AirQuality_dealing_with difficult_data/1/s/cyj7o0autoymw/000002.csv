@@ -1,0 +1,2 @@
+"0","df$Timestamp <- anytime::anytime(paste0(df$Date, ' ' ,df$Time))"
+"0","df %>% select(Date, Time, Timestamp)"

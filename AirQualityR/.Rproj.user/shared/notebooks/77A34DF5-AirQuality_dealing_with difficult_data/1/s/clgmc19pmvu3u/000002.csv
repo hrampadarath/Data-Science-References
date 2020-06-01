@@ -1,0 +1,3 @@
+"0","df %>% group_by(month) %>% select(CO.GT.) %>% summarise(max(CO.GT.,na.rm = TRUE))"
+"2","Adding missing grouping variables: `month`
+"

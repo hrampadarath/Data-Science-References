@@ -1,0 +1,1 @@
+"0","df %>% filter(month == 12) %>% select(CO.GT.) %>% summarise(max(CO.GT.,na.rm = TRUE))"

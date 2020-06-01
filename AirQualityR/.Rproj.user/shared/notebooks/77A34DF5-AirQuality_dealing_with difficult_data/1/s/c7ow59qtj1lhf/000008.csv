@@ -1,0 +1,1 @@
+"0","df %>% select(month, CO.GT.) %>%group_by(month) %>% summarise(mean_CO = mean(CO.GT.,na.rm=TRUE)) %>% arrange(desc(mean_CO))"

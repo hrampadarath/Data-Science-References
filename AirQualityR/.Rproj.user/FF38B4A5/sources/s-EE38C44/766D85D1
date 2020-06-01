@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1589970462752.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4250397961",
+    "id" : "766D85D1",
+    "lastKnownWriteTime" : 1590069600,
+    "last_content_update" : 1590069600238,
+    "path" : "~/PythonML/ML_examples/AirQuality/AirQuality_dealing_with difficult_data.Rmd",
+    "project_path" : "AirQuality_dealing_with difficult_data.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "cursorPosition" : "296,34",
+        "scrollLine" : "277",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
