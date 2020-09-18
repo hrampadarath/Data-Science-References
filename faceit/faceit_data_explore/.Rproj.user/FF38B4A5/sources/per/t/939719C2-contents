@@ -1,0 +1,79 @@
+---
+title: "FACEIT Data Exploration Challenge"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+```
+
+
+## Challenge
+
+Your product manager wants to understand if the new client has increased the number of
+people joining hubs. They therefore asked you whether you could test if the following hypothesis true:
+
+H0: The **proportion** of users who used the new client and joined at least one hub is larger than
+the proportion of users who are using the old web client and joined at least one hub.
+
+Conduct a test of hypothesis, and state any assumptions you have made. What would your
+feedback be to the product team?
+
+
+## Data Set
+
+```{r}
+df <- read_excel("../client__1_.xlsx")
+head(df)
+```
+
+```{r}
+str(df)
+```
+
+```{r}
+summary(df)
+```
+
+
+
+
+
+```{r}
+table(df$client)/nrow(df)
+```
+
+
+
+```{r}
+table(df$client, df$joined_at_least_1_hub)/sum(df$joined_at_least_1_hub,na.rm=TRUE)
+```
+
+
+
+```{r}
+df$joined_at_least_1_hub[is.na(df$joined_at_least_1_hub)] <- 0
+```
+
+
+
+```{r}
+library(ggplot2)
+df %>% ggplot(aes(y=lifespan)) +
+  geom_boxplot() +
+  facet_wrap(~joined_at_least_1_hub, scale="free")
+```
+
+```{r}
+library(ggplot2)
+df %>% ggplot(aes(y=lifespan)) +
+  geom_boxplot() +
+  facet_wrap(~client, scale="free")
+```
+
+
